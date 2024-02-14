@@ -1,5 +1,6 @@
 package com.aforo.kafka.consumer;
 
+import java.util.Optional;
 import com.aforo.dao.InvoiceDao;
 import com.aforo.model.Invoice;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,10 +24,25 @@ public class TransactionEvents {
 
     public void processTransactionEvent(ConsumerRecord<Integer, String> consumerRecord) throws JsonProcessingException {
         Invoice event = objectMapper.readValue(consumerRecord.value(), Invoice.class);
-        log.info("Actulizando Invoice ***" + event.getIdInvoice());
+        log.info("Actulizando Invoice *" + event.getIdInvoice());
         event.setState(1);
    		log.info("Se ha pagado la factura # " + event.getIdInvoice());
 
+
+        //Get invoice by id
+        Optional<Invoice> invoiceOptional = _dao.findById(event.getIdInvoice());
+
+        if(invoiceOptional.isPresent()){
+            Invoice invoice = invoiceOptional.get();
+        //Update invoice
+        invoice.setAmount(event.getAmount() - invoice.getAmount());
+        //Save invoice
+        _dao.save(invoice);
+        }else{
+        //Save invoice if no exist
         _dao.save(event);
     }
 }
+}
+
+
